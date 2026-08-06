@@ -11,6 +11,7 @@ import org.springframework.test.web.client.MockRestServiceServer;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -49,6 +50,23 @@ class AvengersClientTest {
         List<String> codenames = avengersClient.fetchCodenames();
 
         assertThat(codenames).containsExactly("Hulk", "Capitão América");
+
+        server.verify();
+    }
+
+    @Test
+    void shouldThrowExceptionWhenAvengersListIsMissing() {
+        String responseBody = """
+                    {}
+                """;
+
+        server.expect(requestTo("https://example.com/vingadores.json"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> avengersClient.fetchCodenames())
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Não foi possível obter os codinomes dos Vingadores");
 
         server.verify();
     }
