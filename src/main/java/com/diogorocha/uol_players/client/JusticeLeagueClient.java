@@ -1,5 +1,6 @@
 package com.diogorocha.uol_players.client;
 
+import com.diogorocha.uol_players.client.dto.JusticeLeagueCodenamesResponse;
 import com.diogorocha.uol_players.client.dto.JusticeLeagueResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
@@ -40,11 +41,13 @@ public class JusticeLeagueClient {
         try {
             JusticeLeagueResponse response = xmlMapper.readValue(xmlResponse, JusticeLeagueResponse.class);
 
-            if (response.codenames() == null) {
+            JusticeLeagueCodenamesResponse codenamesResponse = response.codenames();
+
+            if (codenamesResponse == null || codenamesResponse.values() == null) {
                 throw new IllegalStateException("Não foi possível obter os codinomes da Liga da Justiça");
             }
 
-            return response.codenames();
+            return codenamesResponse.values();
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Não foi possível interpretar os codinomes da Liga da Justiça", exception);
         }
