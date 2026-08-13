@@ -12,6 +12,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -88,5 +90,42 @@ class PlayerServiceTest {
         assertThat(savedPlayer.getPhone()).isNull();
         assertThat(savedPlayer.getCodename()).isEqualTo("Flash");
         assertThat(savedPlayer.getCodenameGroup()).isEqualTo(CodenameGroup.JUSTICE_LEAGUE);
+    }
+
+    @Test
+    void shouldReturnAllPlayers() {
+        Player firstPlayer = new Player(
+                "Diogo",
+                "diogo@email.com",
+                "11999999999",
+                "Hulk",
+                CodenameGroup.AVENGERS
+        );
+
+        Player secondPlayer = new Player(
+                "Maria",
+                "maria@email.com",
+                null,
+                "Flash",
+                CodenameGroup.JUSTICE_LEAGUE
+        );
+
+        when(playerRepository.findAll()).thenReturn(List.of(firstPlayer, secondPlayer));
+
+        List<PlayerResponse> players = playerService.findAll();
+
+        assertThat(players).hasSize(2);
+
+        assertThat(players.get(0).name()).isEqualTo("Diogo");
+        assertThat(players.get(0).email()).isEqualTo("diogo@email.com");
+        assertThat(players.get(0).codename()).isEqualTo("Hulk");
+        assertThat(players.get(0).codenameGroup()).isEqualTo(CodenameGroup.AVENGERS);
+
+        assertThat(players.get(1).name()).isEqualTo("Maria");
+        assertThat(players.get(1).email()).isEqualTo("maria@email.com");
+        assertThat(players.get(1).codename()).isEqualTo("Flash");
+        assertThat(players.get(1).codenameGroup()).isEqualTo(CodenameGroup.JUSTICE_LEAGUE);
+
+        verify(playerRepository).findAll();
     }
 }

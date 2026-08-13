@@ -8,6 +8,8 @@ import com.diogorocha.uol_players.repository.PlayerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class PlayerService {
 
@@ -39,5 +41,14 @@ public class PlayerService {
         Player savedPlayer = playerRepository.save(player);
 
         return PlayerMapper.toResponse(savedPlayer);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PlayerResponse> findAll() {
+        return playerRepository
+                .findAll()
+                .stream()
+                .map(PlayerMapper::toResponse)
+                .toList();
     }
 }
