@@ -45,7 +45,7 @@ class AvengersClientTest {
 
         server.expect(requestTo("https://example.com/vingadores.json"))
                 .andExpect(method(HttpMethod.GET))
-                .andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(responseBody, MediaType.TEXT_PLAIN));
 
         List<String> codenames = avengersClient.fetchCodenames();
 
@@ -62,7 +62,7 @@ class AvengersClientTest {
 
         server.expect(requestTo("https://example.com/vingadores.json"))
                 .andExpect(method(HttpMethod.GET))
-                .andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(responseBody, MediaType.TEXT_PLAIN));
 
         assertThatThrownBy(() -> avengersClient.fetchCodenames())
                 .isInstanceOf(IllegalStateException.class)
