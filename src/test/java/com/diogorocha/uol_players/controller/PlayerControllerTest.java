@@ -3,6 +3,7 @@ package com.diogorocha.uol_players.controller;
 import com.diogorocha.uol_players.dto.CreatePlayerRequest;
 import com.diogorocha.uol_players.dto.PlayerResponse;
 import com.diogorocha.uol_players.enums.CodenameGroup;
+import com.diogorocha.uol_players.exception.CodenameUnavailableException;
 import com.diogorocha.uol_players.service.PlayerService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -69,7 +69,7 @@ public class PlayerControllerTest {
     }
 
     @Test
-    void shouldReturnBadRequestWhenRequestIsInvalid() throws Exception {
+    void shouldReturnValidationErrorsWhenRequestIsInvalid() throws Exception {
         String requestBody = """
                 {
                     "name": "",
@@ -79,10 +79,23 @@ public class PlayerControllerTest {
                 }
                 """;
 
-        mockMvc.perform(post("/players")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(
+                        post("/players")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.error").value("Bad Request"))
+                .andExpect(
+                        jsonPath("$.errors.name")
+                                .value("Nome é obrigatório")
+                )
+                .andExpect(
+                        jsonPath("$.errors.email")
+                                .value("E-mail deve possuir um formato válido")
+                )
+                .andExpect(jsonPath("$.path").value("/players"));
 
         verifyNoInteractions(playerService);
     }
@@ -122,5 +135,32 @@ public class PlayerControllerTest {
                 .andExpect(jsonPath("$[1].codename").value("Flash"))
                 .andExpect(jsonPath("$[1].codenameGroup").value("JUSTICE_LEAGUE")
                 );
+    }
+
+    @Test
+    void shouldReturnConflictWhenNoCodenameIsAvailable() throws Exception {
+        doThrow(
+                new CodenameUnavailableException(
+                        "Não há codinomes disponíveis para o grupo selecionado"
+                )
+        )
+                .when(playerService)
+                .create(any(CreatePlayerRequest.class));
+
+        String requestBody = """
+                {
+                    "name": "Diogo",
+                    "email": "diogo@email.com",
+                    "phone": "11999999999",
+                    "codenameGroup": "AVENGERS"
+                }
+                """;
+
+        mockMvc.perform(post("/players").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.Status").value(409))
+                .andExpect(jsonPath("$.error").value("Conflict"))
+                .andExpect(jsonPath("$.message").value("Não há codinomes disponíveis para o grupo selecionado"))
+                .andExpect(jsonPath("$.path").value("/players"));
     }
 }
