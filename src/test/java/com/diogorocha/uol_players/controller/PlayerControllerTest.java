@@ -3,6 +3,7 @@ package com.diogorocha.uol_players.controller;
 import com.diogorocha.uol_players.dto.CreatePlayerRequest;
 import com.diogorocha.uol_players.dto.PlayerResponse;
 import com.diogorocha.uol_players.enums.CodenameGroup;
+import com.diogorocha.uol_players.exception.CodenameSourceException;
 import com.diogorocha.uol_players.exception.CodenameUnavailableException;
 import com.diogorocha.uol_players.service.PlayerService;
 import org.junit.jupiter.api.Test;
@@ -158,9 +159,38 @@ public class PlayerControllerTest {
 
         mockMvc.perform(post("/players").contentType(MediaType.APPLICATION_JSON).content(requestBody))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.Status").value(409))
+                .andExpect(jsonPath("$.status").value(409))
                 .andExpect(jsonPath("$.error").value("Conflict"))
                 .andExpect(jsonPath("$.message").value("Não há codinomes disponíveis para o grupo selecionado"))
+                .andExpect(jsonPath("$.path").value("/players"));
+    }
+
+    @Test
+    void shouldReturnBadGatewayWhenCodenameSourceFails() throws Exception {
+        when(playerService.create(any(CreatePlayerRequest.class)))
+                .thenThrow(new CodenameSourceException("Não foi possível acessar a fonte de codinomes dos Vingadores"));
+
+        String requestBody = """
+                {
+                    "name": "Diogo",
+                    "email": "diogo@email.com",
+                    "phone": "11999999999",
+                    "codenameGroup": "AVENGERS"
+                }
+                """;
+
+        mockMvc.perform(post("/players")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isBadGateway())
+                .andExpect(jsonPath("$.status").value(502))
+                .andExpect(jsonPath("$.error").value("Bad Gateway"))
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        "Não foi possível acessar a fonte de codinomes dos Vingadores"
+                                )
+                )
                 .andExpect(jsonPath("$.path").value("/players"));
     }
 }

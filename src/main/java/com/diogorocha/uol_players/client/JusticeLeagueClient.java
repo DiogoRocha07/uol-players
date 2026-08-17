@@ -2,11 +2,13 @@ package com.diogorocha.uol_players.client;
 
 import com.diogorocha.uol_players.client.dto.JusticeLeagueCodenamesResponse;
 import com.diogorocha.uol_players.client.dto.JusticeLeagueResponse;
+import com.diogorocha.uol_players.exception.CodenameSourceException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.List;
 
@@ -28,28 +30,30 @@ public class JusticeLeagueClient {
     }
 
     public List<String> fetchCodenames() {
-        String xmlResponse = restClient
-                .get()
-                .uri(justiceLeagueUrl)
-                .retrieve()
-                .body(String.class);
-
-        if (xmlResponse == null || xmlResponse.isBlank()) {
-            throw new IllegalStateException("Não foi possível obter os codinomes da Liga da Justiça");
-        }
-
         try {
+            String xmlResponse = restClient
+                    .get()
+                    .uri(justiceLeagueUrl)
+                    .retrieve()
+                    .body(String.class);
+
+            if (xmlResponse == null || xmlResponse.isBlank()) {
+                throw new CodenameSourceException("A fonte de codinomes da Liga da Justiça retornou uma resposta vazia");
+            }
+
             JusticeLeagueResponse response = xmlMapper.readValue(xmlResponse, JusticeLeagueResponse.class);
 
             JusticeLeagueCodenamesResponse codenamesResponse = response.codenames();
 
             if (codenamesResponse == null || codenamesResponse.values() == null) {
-                throw new IllegalStateException("Não foi possível obter os codinomes da Liga da Justiça");
+                throw new CodenameSourceException("A fonte de codinomes da Liga da Justiça retornou uma resposta inválida");
             }
 
             return codenamesResponse.values();
+        } catch (RestClientException exception) {
+            throw new CodenameSourceException("Não foi possível acessar a fonte de codinomes da Liga da Justiça", exception);
         } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Não foi possível interpretar os codinomes da Liga da Justiça", exception);
+            throw new CodenameSourceException("Não foi possível interpretar os codinomes da Liga da Justiça", exception);
         }
     }
 }
